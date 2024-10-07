@@ -1,9 +1,16 @@
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.0.0/firebase-app.js';
-import { getMessaging, getToken } from 'https://www.gstatic.com/firebasejs/9.0.0/firebase-messaging.js';
+import { getMessaging, getToken, onMessage } from 'https://www.gstatic.com/firebasejs/9.0.0/firebase-messaging.js';
 
 // Your Firebase configuration
 const firebaseConfig = {
-  //add there
+    apiKey: "AIzaSyBhxlDm_wTd3qATOIrzPYroZNEFQdWni10",
+    authDomain: "test-crm-7c4a2.firebaseapp.com",
+    databaseURL: "https://test-crm-7c4a2-default-rtdb.firebaseio.com",
+    projectId: "test-crm-7c4a2",
+    storageBucket: "test-crm-7c4a2.appspot.com",
+    messagingSenderId: "858406026815",
+    appId: "1:858406026815:web:e7b6e54b894fbb94c3c28a",
+    measurementId: "G-2P7YZ36G8H"
 };
 
 // Initialize Firebase
@@ -46,6 +53,23 @@ function requestNotificationPermission() {
         console.error('Error requesting notification permission.', err);
     });
 }
+// Handle incoming foreground messages
+onMessage(messaging, (payload) => {
+    console.log('Message received. ', payload);
+
+    // Customize and display the notification
+    const notificationTitle = payload.notification?.title || payload.data.title || "Default Title";
+    const notificationOptions = {
+        body: payload.notification?.body || payload.data.body || "Default Body",
+        icon: payload.notification?.icon || payload.data.icon || 'https://cdn-icons-png.flaticon.com/128/17858/17858469.png',
+        data: { url: payload.data.click_action || 'https://app.ktt.io' }
+    };
+
+    // Use the Notification API to show notifications when the website is active
+    if (Notification.permission === 'granted') {
+        new Notification(notificationTitle, notificationOptions);
+    }
+});
 
 function sendTokenToServer(token) {
     fetch('http://localhost:3000/subscribe', {
@@ -53,7 +77,7 @@ function sendTokenToServer(token) {
         headers: {
             'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ token: token, topic: 'sanjay' }) // Replace 'your-topic-name' with the actual topic name
+        body: JSON.stringify({ token: token, topic: 'user2' }) // Replace 'your-topic-name' with the actual topic name
     })
     .then(response => response.json())
     .then(data => {

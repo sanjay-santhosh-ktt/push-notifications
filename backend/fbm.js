@@ -1,69 +1,47 @@
-var request = require('request');
-var schedule = require('node-schedule');
-var googleapis = require('googleapis');
+var admin = require('firebase-admin');
 
-var serviceAccount = require('./config/test-crm-7c4a2-firebase-adminsdk-ue506-a2a82657cf.json');
+var serviceAccount = require(__dirname + '/atrack-d82d0-firebase-adminsdk-76mqd-739a9e4f67.json');
 
-var scopes = [
-  'https://www.googleapis.com/auth/firebase.messaging'
-];
-
-var accessToken = "";
-
-var FBM = function() {}
-
-var google = new googleapis.GoogleApis();
-
-function getAccessToken() {
-  var jwtClient = new google.auth.JWT(
-    serviceAccount.client_email,
-    null,
-    serviceAccount.private_key,
-    scopes,
-    null
-  );
-
-  jwtClient.authorize(function(err, tokens) {
-    if (err) {
-      console.log(err);
-      return;
-    }
-    console.log("access_token: " + tokens.access_token);
-    accessToken = tokens.access_token;
-  });
-}
-
-// Schedule the access token refresh every 30 minutes
-schedule.scheduleJob('*/30 * * * *', function() {
-  getAccessToken();
+admin.initializeApp({
+  credential: admin.credential.cert(serviceAccount),
 });
-getAccessToken();
 
+var FBM = function() {};
 FBM.prototype.send = function(msg, callback) {
-  request.post({
-    uri: 'https://fcm.googleapis.com/v1/projects/test-crm-7c4a2/messages:send',
-    body: JSON.stringify(msg),
-    headers: {
-      'Authorization': 'Bearer ' + accessToken,
-      'Content-Type': 'application/json'
-    }
-  }, function(err, response, body) {
-    callback(err, response, body);
-  });
-}
+  admin.messaging().send(msg)
+    .then(function(response) {
+      console.log('Successfully sent message:', response);
+      callback(null, response);
+    })
+    .catch(function(error) {
+      console.error('Error sending message:', error);
+      callback(error, null);
+    });
+};
 
 FBM.prototype.subscribeToTopic = function(token, topic, callback) {
-  var url = `https://iid.googleapis.com/iid/v1/${token}/rel/topics/${topic}`;
-  request.post({
-    uri: url,
-    headers: {
-      'Authorization': 'Bearer ' + accessToken,
-      'Content-Type': 'application/json',
-      'access_token_auth': true
-    }
-  }, function(err, response, body) {
-    callback(err, response, body);
-  });
-}
+  console.log(token,topic);
+  admin.messaging().subscribeToTopic(token, topic)
+    .then(function(response) {
+      console.log('Successfully subscribed to topic:', response);
+      callback(null, response);
+    })  
+    .catch(function(error) {
+      console.error('Error subscribing to topic:', error);
+      callback(error, null);
+    });
+};
+
+FBM.prototype.unsubscribeFromTopic = function(token, topic, callback) {
+  admin.messaging().unsubscribeFromTopic(token, topic)
+    .then(function(response) {
+      console.log('Successfully unsubscribed from topic:', response);
+      callback(null, response);
+    })
+    .catch(function(error) {
+      console.error('Error unsubscribing from topic:', error);
+      callback(error, null);
+    });
+};
 
 module.exports = FBM;

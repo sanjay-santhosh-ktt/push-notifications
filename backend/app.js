@@ -44,6 +44,7 @@ app.post('/subscribe', (req, res) => {
   });
 });
 
+
 // Start the server and listen on a specified port
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
